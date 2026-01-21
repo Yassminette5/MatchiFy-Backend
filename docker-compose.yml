@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: matchify-backend
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongodb:27017/matchify
+      # Ajoute d'autres variables d'environnement selon tes besoins
+      # JWT_SECRET: ${JWT_SECRET}
+      # PORT: 3000
+    depends_on:
+      - mongodb
+    networks:
+      - matchify-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongodb:
+    image: mongo:7-alpine
+    container_name: matchify-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: matchify
+      # MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      # MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - matchify-network
+    restart: unless-stopped
+
+networks:
+  matchify-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
